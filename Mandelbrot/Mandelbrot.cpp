@@ -37,7 +37,28 @@ const char* KernelSource = "\n" \
 "        x = x2 - y2 + stepPosX;                                      \n" \
 "        i++;                          }            \n" \
 "                    \n" \
-"   framebuffer[windowWidth * windowPosY + windowPosX] = i%16;                                           \n" \
+"    int mod = i%16;                                                \n" \
+"    char r, g, b = 0;                                                \n" \
+"    switch (mod)                                                \n" \
+"    {                                                                             \n" \
+"        case 0: r = 66; g = 30; b = 15; break;                                                \n" \
+"        case 1: r = 25; g = 7; b = 26; break;                                                \n" \
+"        case 2: r = 9; g = 1; b = 47; break;                                                \n" \
+"        case 3: r = 4; g = 4; b = 73; break;                                                \n" \
+"        case 4: r = 0; g = 7; b = 100; break;                                                \n" \
+"        case 5: r = 12; g = 44; b = 138; break;                                                \n" \
+"        case 6: r = 24; g = 82; b = 177; break;                                                \n" \
+"        case 7: r = 57; g = 125; b = 209; break;                                                \n" \
+"        case 8: r = 134; g = 181; b = 229; break;                                                \n" \
+"        case 9: r = 211; g = 236; b = 248; break;                                                \n" \
+"        case 10: r = 241; g = 233; b = 191; break;                                                \n" \
+"        case 11: r = 248; g = 201; b = 95; break;                                                \n" \
+"        case 12: r = 254; g = 170; b = 0; break;                                                \n" \
+"        case 13: r = 204; g = 128; b = 0; break;                                                \n" \
+"        case 14: r = 153; g = 87; b = 0; break;                                                \n" \
+"        case 15: r = 106; g = 52; b = 3; break;                                                \n" \
+"    }                                                                                                       \n" \
+"   framebuffer[windowWidth * windowPosY + windowPosX] = (unsigned int)(0 + (r<<16) + (g<<8) + b);                 \n" \
 "}                                                                      \n" \
 "\n";
 
@@ -45,18 +66,23 @@ const char* KernelSource = "\n" \
 HINSTANCE hInst;                                // instance actuelle
 WCHAR szTitle[MAX_LOADSTRING];                  // Texte de la barre de titre
 WCHAR szWindowClass[MAX_LOADSTRING];            // nom de la classe de fenêtre principale
-HWND hTextInput;
+HWND hTextInput;           // nom de la classe de fenêtre principale
+HWND hTextOutput;
+HDC hdc;
+void* memory;
 unsigned int* grid;
 int imgWIDTH = 1000;
 int imgHEIGHT = 1000;
-int gridOffsetX = 100;
-int gridOffsetY = 100;
+int gridOffsetX = 300;
+int gridOffsetY = 10;
 
 // Déclarations anticipées des fonctions incluses dans ce module de code :
 ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
+
+BITMAPINFO bitmap_info;
 
 
 void saveBMP(const char* name, int width, int height, unsigned int* data, int maxIter) {
@@ -163,6 +189,14 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
 
+    bitmap_info.bmiHeader.biSize = sizeof(bitmap_info.bmiHeader);
+    bitmap_info.bmiHeader.biWidth = imgWIDTH;
+    bitmap_info.bmiHeader.biHeight = imgHEIGHT;
+    bitmap_info.bmiHeader.biPlanes = 1;
+    bitmap_info.bmiHeader.biBitCount = 32;
+    bitmap_info.bmiHeader.biCompression = BI_RGB;
+
+    
     // TODO: Placez le code ici.
 
     size_t global;                      // global domain size  
@@ -199,6 +233,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     cl_mem y_out;    
 
     grid = (unsigned int*)malloc(imgWIDTH * imgHEIGHT * sizeof(unsigned int));
+    //memory = VirtualAlloc(grid, imgWIDTH * imgHEIGHT * sizeof(unsigned int), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
 
     clGetPlatformIDs(1, &platform_id, &num_of_platform);
     clGetDeviceIDs(platform_id, CL_DEVICE_TYPE_GPU, 1, &device_id, &num_of_devices);
@@ -294,6 +329,21 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         exit(1);
     }
 
+    // extract timing data from the event, prof_event
+    err = clWaitForEvents(1, &prof_event);
+    cl_ulong ev_start_time = (cl_ulong)0;
+    cl_ulong ev_end_time = (cl_ulong)0;
+    err = clGetEventProfilingInfo(prof_event, CL_PROFILING_COMMAND_START,
+        sizeof(cl_ulong), &ev_start_time, NULL);
+    err = clGetEventProfilingInfo(prof_event, CL_PROFILING_COMMAND_END,
+        sizeof(cl_ulong), &ev_end_time, NULL);
+
+    wchar_t * tempL[32];
+    //swprintf_s(&tempL[32], L"prof says %f ms \n", (double)(ev_end_time - ev_start_time) * 1.0e-6);
+    
+
+    SetWindowTextW(hTextOutput, L"TEST");
+
 
    //wchar_t textname[100];
    // GetWindowTextW(hTextInput, textname, 100);
@@ -317,6 +367,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_MANDELBROT));
 
     MSG msg;
+   
 
     // Boucle de messages principale :
     while (GetMessage(&msg, nullptr, 0, 0))
@@ -390,9 +441,11 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 
 void addControls(HWND hWnd) {
     //LABEL
-    CreateWindowW(L"static", L"Enter text here :", WS_VISIBLE | WS_CHILD, 10, 10, 200, 200, hWnd, NULL, NULL, NULL);
+    hTextOutput = CreateWindowW(L"static", L"Enter text here :", WS_VISIBLE | WS_CHILD, 10, 10, 200, 200, hWnd, NULL, NULL, NULL);
     //TEXT INPUT
     hTextInput = CreateWindowW(L"edit", L"Image1.bmp", WS_VISIBLE | WS_CHILD | WS_BORDER, 10, 210, 200, 200, hWnd, NULL, NULL, NULL);
+    //SECTION GPU
+    //hSection = CreateDIBSection(hdc, )
 }
 
 //
@@ -432,8 +485,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     case WM_PAINT:
         {
             PAINTSTRUCT ps;
-            HDC hdc = BeginPaint(hWnd, &ps);
+            hdc = BeginPaint(hWnd, &ps);
             // TODO: Ajoutez ici le code de dessin qui utilise hdc...
+
+            /*
             int i, j, iter = 0;
             if (grid != NULL) {
                 for (j = 0; j < imgHEIGHT; j++) {
@@ -461,10 +516,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                                 case 15: r = 106; g = 52; b = 3; break;
                         }
                         SetPixel(hdc, gridOffsetX + i, gridOffsetY + j, RGB(r, g, b));
+
+                        
                     }
                 }
             }
-            
+            */
+
+            StretchDIBits(hdc, gridOffsetX, gridOffsetY, imgWIDTH, imgHEIGHT, 0, 0, imgWIDTH, imgHEIGHT, grid, &bitmap_info, DIB_RGB_COLORS, SRCCOPY);
 
 
             EndPaint(hWnd, &ps);
