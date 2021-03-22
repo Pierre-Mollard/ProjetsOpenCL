@@ -81,7 +81,7 @@ int main(int argc, char** argv)
     int ntotal_iter = NTOTALITER;
     int nwork_iter = NWORKITER;
     double step;
-    int max_size, workgroup_size = 32;
+    int max_size, workgroup_size = 16;
     int nworkgroup;
     int i;
 
@@ -105,6 +105,7 @@ int main(int argc, char** argv)
         printf("Error: Failed to find the platform!\n");
         return EXIT_FAILURE;
     }
+    printf("First PlatformID : %p, NumPlatform : %d\n", firstPlatformId, numPlatforms);
 
     err = clGetDeviceIDs(firstPlatformId, CL_DEVICE_TYPE_GPU, 1, &device_id, NULL);
     if (err != CL_SUCCESS)
@@ -112,6 +113,7 @@ int main(int argc, char** argv)
         printf("Error: Failed to create a device group!\n");
         return EXIT_FAILURE;
     }
+    printf("DeviceID : %p\n", device_id);
 
     // Create a compute context 
     context = clCreateContext(0, 1, &device_id, NULL, NULL, &err);
@@ -157,14 +159,17 @@ int main(int argc, char** argv)
         printf("Error: Failed to create compute kernel!\n");
         exit(1);
     }
+    size_t len;
+    char buffer[2048];
+    err = clGetKernelInfo(kernel, CL_KERNEL_FUNCTION_NAME, sizeof(buffer), buffer, &len);
+    printf("kernel function name : %s\n", buffer);
 
     // Get the maximum work group size for executing the kernel on the device
-    err = clGetKernelWorkGroupInfo(kernel, device_id, CL_KERNEL_WORK_GROUP_SIZE,
-        sizeof(max_size), &max_size, NULL);
+    err = clGetKernelWorkGroupInfo(kernel, device_id, CL_KERNEL_WORK_GROUP_SIZE, sizeof(max_size), &max_size, NULL);
     if (err != CL_SUCCESS)
     {
         printf("Error: Failed to retrieve kernel work group info! %d\n", err);
-        exit(1);
+        printf("maxsize = %d\n", max_size);
     }
     if (max_size > workgroup_size) workgroup_size = max_size;
 
