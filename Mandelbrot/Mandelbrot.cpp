@@ -8,6 +8,8 @@
 #include <time.h>
 
 #define MAX_LOADSTRING 100
+#define BT_NDRANGE 4
+#define BT_SAVE 3
 
 const char* KernelSource = "\n" \
 "__kernel void mandel(                                                    \n" \
@@ -75,6 +77,18 @@ int imgWIDTH = 1000;
 int imgHEIGHT = 1000;
 int gridOffsetX = 300;
 int gridOffsetY = 10;
+double step;
+double startX = -2;
+double startY = 1.75;
+int maxIter = 255;
+
+cl_event prof_event;
+size_t dim[2] = { imgWIDTH, imgHEIGHT };
+cl_kernel kernel;
+cl_command_queue commands;
+cl_program program;
+cl_context context;
+cl_mem y_out;
 
 // Déclarations anticipées des fonctions incluses dans ce module de code :
 ATOM                MyRegisterClass(HINSTANCE hInstance);
@@ -202,7 +216,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     size_t global;                      // global domain size  
     size_t local;                       // local  domain size  
 
-    double step;
     int nworkgroup = 32;
     int max_size = 16;
     int workgroup_size = max_size;
@@ -215,22 +228,13 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     float ymax = 1.75f;
     float ymin = -1.75f;
 
-    double startX = -2;
-    double startY = 1.75;
 
-    int maxIter = 255;
-
-    cl_context context;
     cl_context_properties properties[3];
-    cl_kernel kernel;
-    cl_command_queue commands;
-    cl_program program;
     cl_int err;
     cl_platform_id platform_id;
     cl_uint num_of_platform = 0;
     cl_device_id device_id;
     cl_uint num_of_devices = 0;
-    cl_mem y_out;    
 
     grid = (unsigned int*)malloc(imgWIDTH * imgHEIGHT * sizeof(unsigned int));
     //memory = VirtualAlloc(grid, imgWIDTH * imgHEIGHT * sizeof(unsigned int), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
@@ -295,22 +299,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         exit(1);
     }
 
-    // Get the maximum work group size for executing the kernel on the device
-    err = clGetKernelWorkGroupInfo(kernel, device_id, CL_KERNEL_WORK_GROUP_SIZE, sizeof(local), &local, NULL);
-    if (err != CL_SUCCESS)
-    {
-        printf("Error: Failed to retrieve kernel work group info! %d\n", err);
-    }
     double rtime;
     rtime = clock();
 
-    // Execute the kernel over the entire range of our 1d input data set
-    // using the maximum number of work group items for this device
-    cl_event prof_event;
-    global = nworkgroup * workgroup_size;
-    local = workgroup_size;
-    size_t ggg[2] = { imgWIDTH, imgHEIGHT };
-    err = clEnqueueNDRangeKernel(commands, kernel, 2, NULL, ggg, NULL, 0, NULL, &prof_event);
+    err = clEnqueueNDRangeKernel(commands, kernel, 2, NULL, dim, NULL, 0, NULL, &prof_event);
     if (err)
     {
         printf("Error: Failed to execute kernel!\n");
@@ -341,15 +333,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     wchar_t * tempL[32];
     //swprintf_s(&tempL[32], L"prof says %f ms \n", (double)(ev_end_time - ev_start_time) * 1.0e-6);
     
-
-    SetWindowTextW(hTextOutput, L"TEST");
-
-
-   //wchar_t textname[100];
-   // GetWindowTextW(hTextInput, textname, 100);
-   // saveBMP((const char *)textname, imgWIDTH, imgHEIGHT, grid, maxIter);
-
-    //saveBMP("test0.bmp", imgWIDTH, imgHEIGHT, grid, maxIter);
 
 
     // Initialise les chaînes globales
@@ -441,11 +424,12 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 
 void addControls(HWND hWnd) {
     //LABEL
-    hTextOutput = CreateWindowW(L"static", L"Enter text here :", WS_VISIBLE | WS_CHILD, 10, 10, 200, 200, hWnd, NULL, NULL, NULL);
+    hTextOutput = CreateWindowW(L"static", L"Enter text here :", WS_VISIBLE | WS_CHILD, 10, 10, 200, 150, hWnd, NULL, NULL, NULL);
     //TEXT INPUT
-    hTextInput = CreateWindowW(L"edit", L"Image1.bmp", WS_VISIBLE | WS_CHILD | WS_BORDER, 10, 210, 200, 200, hWnd, NULL, NULL, NULL);
-    //SECTION GPU
-    //hSection = CreateDIBSection(hdc, )
+    hTextInput = CreateWindowW(L"edit", L"Image1.bmp", WS_VISIBLE | WS_CHILD | WS_BORDER, 10, 210, 200, 50, hWnd, NULL, NULL, NULL);
+    //BT
+    CreateWindowW(L"button", L"Save", WS_VISIBLE | WS_CHILD, 10, 260, 200, 50, hWnd, NULL, NULL, NULL);
+    CreateWindowW(L"button", L"NDRange", WS_VISIBLE | WS_CHILD, 10, 360, 200, 50, hWnd, (HMENU)BT_NDRANGE, NULL, NULL);
 }
 
 //
@@ -476,6 +460,51 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 break;
             case IDM_EXIT:
                 DestroyWindow(hWnd);
+                break;
+            case BT_NDRANGE:
+                cl_int err;
+
+                err = 0;
+                err = clSetKernelArg(kernel, 0, sizeof(cl_double), &startX);
+                err |= clSetKernelArg(kernel, 1, sizeof(cl_double), &startY);
+                err |= clSetKernelArg(kernel, 2, sizeof(cl_double), &step);
+                err |= clSetKernelArg(kernel, 3, sizeof(unsigned int), &maxIter);
+                err |= clSetKernelArg(kernel, 4, sizeof(cl_mem), &y_out);
+                err |= clSetKernelArg(kernel, 5, sizeof(unsigned int), &imgWIDTH);
+                if (err != CL_SUCCESS)
+                {
+                    MessageBox(hWnd, L"ERROR", L"Error: Failed to set kernel arguments!", MB_OK);
+                }
+
+                step -= 0.0001;
+                startY += 0.01;
+                err = clEnqueueNDRangeKernel(commands, kernel, 2, NULL, dim, NULL, 0, NULL, &prof_event);
+                if (err != CL_SUCCESS)
+                {
+                    
+                }
+                clFinish(commands);
+                err = clEnqueueReadBuffer(commands, y_out, CL_TRUE, 0, sizeof(unsigned int) * imgHEIGHT * imgWIDTH, grid, 0, NULL, NULL);
+                if (err != CL_SUCCESS)
+                {
+                    MessageBox(hWnd, L"ERROR", L"Error: Failed to read output array!", MB_OK);
+                }
+
+                wchar_t text[100];
+                GetWindowTextW(hTextInput, text, 100);
+                SetWindowTextW(hTextOutput, L"Done.  (TODO Time)");
+
+                //Repaint Window
+                InvalidateRect(hWnd, NULL, TRUE);
+                UpdateWindow(hWnd);
+
+                break;
+            case BT_SAVE:
+                wchar_t textsave[100];
+               // char * output;
+                GetWindowTextW(hTextInput, textsave, 100);
+                //sprintf_s(output,100, "%ws", textsave);
+               //saveBMP(output, imgWIDTH, imgHEIGHT, grid, maxIter);
                 break;
             default:
                 return DefWindowProc(hWnd, message, wParam, lParam);
@@ -522,7 +551,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 }
             }
             */
-
             StretchDIBits(hdc, gridOffsetX, gridOffsetY, imgWIDTH, imgHEIGHT, 0, 0, imgWIDTH, imgHEIGHT, grid, &bitmap_info, DIB_RGB_COLORS, SRCCOPY);
 
 
@@ -530,7 +558,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         }
         break;
     case WM_DESTROY:
+        // cleanup then shutdown
+        clReleaseMemObject(y_out);
+        clReleaseProgram(program);
+        clReleaseKernel(kernel);
+        clReleaseCommandQueue(commands);
+        clReleaseContext(context);
         PostQuitMessage(0);
+        free(grid);
         break;
     default:
         return DefWindowProc(hWnd, message, wParam, lParam);
