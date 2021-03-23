@@ -152,36 +152,12 @@ void saveBMP(const char* name, int width, int height, unsigned int* data, int ma
     for (y = height - 1; y >= 0; y--) {
         for (x = 0; x < width; x++) {
             iter++;
-            int mod = (unsigned char)*(data + iter);
-            int r, g, b = 0;
-            switch (mod)
-            {
-            case 0: r = 66; g = 30; b = 15; break;
-            case 1: r = 25; g = 7; b = 26; break;
-            case 2: r = 9; g = 1; b = 47; break;
-            case 3: r = 4; g = 4; b = 73; break;
-            case 4: r = 0; g = 7; b = 100; break;
-            case 5: r = 12; g = 44; b = 138; break;
-            case 6: r = 24; g = 82; b = 177; break;
-            case 7: r = 57; g = 125; b = 209; break;
-            case 8: r = 134; g = 181; b = 229; break;
-            case 9: r = 211; g = 236; b = 248; break;
-            case 10: r = 241; g = 233; b = 191; break;
-            case 11: r = 248; g = 201; b = 95; break;
-            case 12: r = 254; g = 170; b = 0; break;
-            case 13: r = 204; g = 128; b = 0; break;
-            case 14: r = 153; g = 87; b = 0; break;
-            case 15: r = 106; g = 52; b = 3; break;
-            }
-
-            if (r < 0 || r> 255)
-                r = 0;
-
-            if (g < 0 || g> 255)
-                g = 0;
-
-            if (b < 0 || b> 255)
-                b = 0;
+            int mod = (unsigned int)*(data + iter);
+            char r, g, b = 0;
+            
+            r = (char)((mod & 0x00FF0000)>>16);
+            g = (char)((mod & 0x0000FF00)>>8);
+            b = (char)(mod & 0x000000FF);
 
             fprintf(f, "%c", b);
             fprintf(f, "%c", g);
@@ -353,7 +329,7 @@ void addControls(HWND hWnd) {
     //TEXT INPUT
     hTextInput = CreateWindowW(L"edit", L"Image1.bmp", WS_VISIBLE | WS_CHILD | WS_BORDER, 10, 210, 200, 50, hWnd, NULL, NULL, NULL);
     //BT
-    CreateWindowW(L"button", L"Save", WS_VISIBLE | WS_CHILD, 10, 260, 200, 50, hWnd, NULL, NULL, NULL);
+    CreateWindowW(L"button", L"Save", WS_VISIBLE | WS_CHILD, 10, 260, 200, 50, hWnd, (HMENU)BT_SAVE, NULL, NULL);
     CreateWindowW(L"button", L"NDRange", WS_VISIBLE | WS_CHILD, 10, 360, 200, 50, hWnd, (HMENU)BT_NDRANGE, NULL, NULL);
 }
 
@@ -405,11 +381,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
                 break;
             case BT_SAVE:
-                wchar_t textsave[100];
-               // char * output;
-                GetWindowTextW(hTextInput, textsave, 100);
-                //sprintf_s(output,100, "%ws", textsave);
-               //saveBMP(output, imgWIDTH, imgHEIGHT, grid, maxIter);
+                wchar_t textsave[64];
+                char output[64];
+                GetWindowTextW(hTextInput, textsave, 64);
+                sprintf_s(output, 64, "%ls", textsave);
+                saveBMP(output, imgWIDTH, imgHEIGHT, grid, maxIter);
+
+                wchar_t buff2[64];
+                swprintf_s(buff2, 64, L"Saved as [%ls] \n", textsave);
+                SetWindowTextW(hTextOutput, buff2);
                 break;
             default:
                 return DefWindowProc(hWnd, message, wParam, lParam);
