@@ -39,6 +39,8 @@ const char* KernelSource = "\n" \
 "        x = x2 - y2 + stepPosX;                                      \n" \
 "        i++;                          }            \n" \
 "                    \n" \
+"    if(i >= maxIter) {framebuffer[windowWidth * windowPosY + windowPosX] = 0;return;}              \n" \
+"                    \n" \
 "    int mod = i%16;                                                \n" \
 "    char r, g, b = 0;                                                \n" \
 "    switch (mod)                                                \n" \
