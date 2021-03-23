@@ -80,7 +80,7 @@ HDC hdc;
 unsigned int* grid;
 int imgWIDTH = 1000;
 int imgHEIGHT = 1000;
-int gridOffsetX = 300;
+int gridOffsetX = 220;
 int gridOffsetY = 10;
 double step;
 double startX = -2;
@@ -366,6 +366,22 @@ void addControls(HWND hWnd) {
     CreateWindowW(L"static", L"Max iter :", WS_VISIBLE | WS_CHILD, 110, 470, 100, 25, hWnd, NULL, NULL, NULL);
 }
 
+void refreshParam() {
+    wchar_t buff[32];
+
+    swprintf_s(buff, 32, L"%lf", startX);
+    SetWindowTextW(hParamXInput, buff);
+
+    swprintf_s(buff, 32, L"%lf", startY);
+    SetWindowTextW(hParamYInput, buff);
+
+    swprintf_s(buff, 32, L"%lf", step);
+    SetWindowTextW(hParamSCALEInput, buff);
+
+    swprintf_s(buff, 32, L"%d", maxIter);
+    SetWindowTextW(hParamMAXITERInput, buff);
+}
+
 //
 //  FONCTION : WndProc(HWND, UINT, WPARAM, LPARAM)
 //
@@ -429,6 +445,63 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             }
         }
         break;
+    case WM_RBUTTONDOWN:
+        {
+        int pMx = LOWORD(lParam);
+        int pMy = HIWORD(lParam);
+
+        step -= 0.0001;
+        startX += (double)(pMx - gridOffsetX - imgWIDTH / 2) * step;
+        startY += (double)(pMy - gridOffsetY - imgHEIGHT / 2) * step;
+
+        //step -= 0.00001;
+        refreshParam();
+
+        sendKernel(1);
+
+        // extract timing data from the event, prof_event
+        clWaitForEvents(1, &prof_event);
+        clGetEventProfilingInfo(prof_event, CL_PROFILING_COMMAND_START, sizeof(cl_ulong), &ev_start_time, NULL);
+        clGetEventProfilingInfo(prof_event, CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &ev_end_time, NULL);
+
+        wchar_t buff[32];
+        swprintf_s(buff, 32, L"Prof Time : %fms \n", (double)(ev_end_time - ev_start_time) * 1.0e-6);
+        SetWindowTextW(hTextOutput, buff);
+
+        //Repaint Window
+        InvalidateRect(hWnd, NULL, TRUE);
+        UpdateWindow(hWnd);
+
+        break;
+        }
+    case WM_LBUTTONDOWN:
+    {
+        int pMx = LOWORD(lParam);
+        int pMy = HIWORD(lParam);
+
+        startX += (double)(pMx - gridOffsetX - imgWIDTH/2)*step;
+        startY += (double)(pMy - gridOffsetY - imgHEIGHT/2)*step;
+
+        //step -= 0.00001;
+        refreshParam();
+
+        sendKernel(1);
+
+        // extract timing data from the event, prof_event
+        clWaitForEvents(1, &prof_event);
+        clGetEventProfilingInfo(prof_event, CL_PROFILING_COMMAND_START, sizeof(cl_ulong), &ev_start_time, NULL);
+        clGetEventProfilingInfo(prof_event, CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &ev_end_time, NULL);
+
+        wchar_t buff[32];
+        swprintf_s(buff, 32, L"Prof Time : %fms \n", (double)(ev_end_time - ev_start_time) * 1.0e-6);
+        SetWindowTextW(hTextOutput, buff);
+
+        //Repaint Window
+        InvalidateRect(hWnd, NULL, TRUE);
+        UpdateWindow(hWnd);
+
+        break;
+    }
     case WM_PAINT:
         {
             PAINTSTRUCT ps;
