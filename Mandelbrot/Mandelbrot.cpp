@@ -12,58 +12,58 @@
 #define BT_SAVE 3
 
 const char* KernelSource = "\n" \
-"__kernel void mandel(                                                    \n" \
-"   const double x0,                                                    \n" \
-"   const double y0,                                                    \n" \
-"   const double stepsize,                                                    \n" \
-"   const unsigned int maxIter,                                         \n" \
-"   __global unsigned int *restrict framebuffer,                        \n" \
-"   const unsigned int windowWidth                                      \n" \
-"   )                                                                   \n" \
-"{// WORK ITEM POSITION                                                                      \n" \
-"   const size_t windowPosX = get_global_id(0);                                          \n" \
-"   const size_t windowPosY = get_global_id(1);                                            \n" \
-"   const double stepPosX = x0 + (windowPosX * stepsize);                                           \n" \
-"   const double stepPosY = y0 - (windowPosY * stepsize);                                           \n" \
-"                                              \n" \
-"   double x = 0.0;                                          \n" \
-"   double y = 0.0;                                      \n" \
-"   double x2 = 0.0;                                        \n" \
-"   double y2 = 0.0;                                        \n" \
-"   unsigned int i = 0;                                           \n" \
-"                                              \n" \
-"   while(x2 + y2 < 4.0 && i < maxIter){                                           \n" \
-"        x2 = x*x;                                      \n" \
-"        y2 = y*y;                                      \n" \
-"        y = 2*x*y + stepPosY;                                      \n" \
-"        x = x2 - y2 + stepPosX;                                      \n" \
-"        i++;                          }            \n" \
-"                    \n" \
-"    if(i >= maxIter) {framebuffer[windowWidth * windowPosY + windowPosX] = 0;return;}              \n" \
-"                    \n" \
-"    int mod = i%16;                                                \n" \
-"    char r, g, b = 0;                                                \n" \
-"    switch (mod)                                                \n" \
-"    {                                                                             \n" \
-"        case 0: r = 66; g = 30; b = 15; break;                                                \n" \
-"        case 1: r = 25; g = 7; b = 26; break;                                                \n" \
-"        case 2: r = 9; g = 1; b = 47; break;                                                \n" \
-"        case 3: r = 4; g = 4; b = 73; break;                                                \n" \
-"        case 4: r = 0; g = 7; b = 100; break;                                                \n" \
+"__kernel void mandel(                                                                          \n" \
+"   const double x0,                                                                            \n" \
+"   const double y0,                                                                            \n" \
+"   const double stepsize,                                                                      \n" \
+"   const unsigned int maxIter,                                                                 \n" \
+"   __global unsigned int *restrict framebuffer,                                                \n" \
+"   const unsigned int windowWidth                                                              \n" \
+"   )                                                                                           \n" \
+"{// WORK ITEM POSITION                                                                         \n" \
+"   const size_t windowPosX = get_global_id(0);                                                 \n" \
+"   const size_t windowPosY = get_global_id(1);                                                 \n" \
+"   const double stepPosX = x0 + (windowPosX * stepsize);                                       \n" \
+"   const double stepPosY = y0 - (windowPosY * stepsize);                                       \n" \
+"                                                                                               \n" \
+"   double x = 0.0;                                                                             \n" \
+"   double y = 0.0;                                                                             \n" \
+"   double x2 = 0.0;                                                                            \n" \
+"   double y2 = 0.0;                                                                            \n" \
+"   unsigned int i = 0;                                                                         \n" \
+"                                                                                               \n" \
+"   while(x2 + y2 < 4.0 && i < maxIter){                                                        \n" \
+"        x2 = x*x;                                                                              \n" \
+"        y2 = y*y;                                                                              \n" \
+"        y = 2*x*y + stepPosY;                                                                  \n" \
+"        x = x2 - y2 + stepPosX;                                                                \n" \
+"        i++;                          }                                                        \n" \
+"                                                                                               \n" \
+"    if(i >= maxIter) {framebuffer[windowWidth * windowPosY + windowPosX] = 0;return;}          \n" \
+"                                                                                               \n" \
+"    int mod = i%16;                                                                            \n" \
+"    char r, g, b = 0;                                                                          \n" \
+"    switch (mod)                                                                               \n" \
+"    {                                                                                          \n" \
+"        case 0: r = 66; g = 30; b = 15; break;                                                 \n" \
+"        case 1: r = 25; g = 7; b = 26; break;                                                  \n" \
+"        case 2: r = 9; g = 1; b = 47; break;                                                   \n" \
+"        case 3: r = 4; g = 4; b = 73; break;                                                   \n" \
+"        case 4: r = 0; g = 7; b = 100; break;                                                  \n" \
 "        case 5: r = 12; g = 44; b = 138; break;                                                \n" \
 "        case 6: r = 24; g = 82; b = 177; break;                                                \n" \
-"        case 7: r = 57; g = 125; b = 209; break;                                                \n" \
-"        case 8: r = 134; g = 181; b = 229; break;                                                \n" \
-"        case 9: r = 211; g = 236; b = 248; break;                                                \n" \
-"        case 10: r = 241; g = 233; b = 191; break;                                                \n" \
-"        case 11: r = 248; g = 201; b = 95; break;                                                \n" \
-"        case 12: r = 254; g = 170; b = 0; break;                                                \n" \
-"        case 13: r = 204; g = 128; b = 0; break;                                                \n" \
+"        case 7: r = 57; g = 125; b = 209; break;                                               \n" \
+"        case 8: r = 134; g = 181; b = 229; break;                                              \n" \
+"        case 9: r = 211; g = 236; b = 248; break;                                              \n" \
+"        case 10: r = 241; g = 233; b = 191; break;                                             \n" \
+"        case 11: r = 248; g = 201; b = 95; break;                                              \n" \
+"        case 12: r = 254; g = 170; b = 0; break;                                               \n" \
+"        case 13: r = 204; g = 128; b = 0; break;                                               \n" \
 "        case 14: r = 153; g = 87; b = 0; break;                                                \n" \
 "        case 15: r = 106; g = 52; b = 3; break;                                                \n" \
-"    }                                                                                                       \n" \
-"   framebuffer[windowWidth * windowPosY + windowPosX] = (unsigned int)(0 + (r<<16) + (g<<8) + b);                 \n" \
-"}                                                                      \n" \
+"    }                                                                                          \n" \
+"   framebuffer[windowWidth*windowPosY + windowPosX] = (unsigned int)(0 + (r<<16) + (g<<8) + b);\n" \
+"}                                                                                              \n" \
 "\n";
 
 // Variables globales :
@@ -72,6 +72,10 @@ WCHAR szTitle[MAX_LOADSTRING];                  // Texte de la barre de titre
 WCHAR szWindowClass[MAX_LOADSTRING];            // nom de la classe de fenêtre principale
 HWND hTextInput;           // nom de la classe de fenêtre principale
 HWND hTextOutput;
+HWND hParamXInput;
+HWND hParamYInput;
+HWND hParamSCALEInput;
+HWND hParamMAXITERInput;
 HDC hdc;
 unsigned int* grid;
 int imgWIDTH = 1000;
@@ -174,8 +178,20 @@ void saveBMP(const char* name, int width, int height, unsigned int* data, int ma
     fclose(f);
 }
 
-int sendKernel() {
+int sendKernel(int useParams) {
     cl_int err;
+
+    if (useParams) {
+        wchar_t buffRead[64];
+        GetWindowTextW(hParamXInput, buffRead, 64);
+        startX = wcstod(buffRead, NULL);
+        GetWindowTextW(hParamYInput, buffRead, 64);
+        startY = wcstod(buffRead, NULL);
+        GetWindowTextW(hParamSCALEInput, buffRead, 64);
+        step = wcstod(buffRead, NULL);
+        GetWindowTextW(hParamMAXITERInput, buffRead, 64);
+        maxIter = (int)wcstod(buffRead, NULL);
+    }
 
     err = 0;
     err = clSetKernelArg(kernel, 0, sizeof(cl_double), &startX);
@@ -240,7 +256,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     y_out = clCreateBuffer(context, CL_MEM_WRITE_ONLY, sizeof(unsigned int) * imgHEIGHT * imgWIDTH, NULL, NULL);
 
-    sendKernel();
+    sendKernel(0);
 
     // Initialise les chaînes globales
     LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
@@ -333,6 +349,21 @@ void addControls(HWND hWnd) {
     //BT
     CreateWindowW(L"button", L"Save", WS_VISIBLE | WS_CHILD, 10, 260, 200, 50, hWnd, (HMENU)BT_SAVE, NULL, NULL);
     CreateWindowW(L"button", L"NDRange", WS_VISIBLE | WS_CHILD, 10, 360, 200, 50, hWnd, (HMENU)BT_NDRANGE, NULL, NULL);
+    //PARAMS INPUTS
+    wchar_t buff[32];
+    swprintf_s(buff, 32, L"%lf", startX);
+    hParamXInput = CreateWindowW(L"edit", buff, WS_VISIBLE | WS_CHILD | WS_BORDER, 10, 420+25, 100, 25, hWnd, NULL, NULL, NULL);
+    swprintf_s(buff, 32, L"%lf", startY);
+    hParamYInput = CreateWindowW(L"edit", buff, WS_VISIBLE | WS_CHILD | WS_BORDER, 110, 420+25, 100, 25, hWnd, NULL, NULL, NULL);
+    swprintf_s(buff, 32, L"%lf", step);
+    hParamSCALEInput = CreateWindowW(L"edit", buff, WS_VISIBLE | WS_CHILD | WS_BORDER, 10, 470+25, 100, 25, hWnd, NULL, NULL, NULL);
+    swprintf_s(buff, 32, L"%d", maxIter);
+    hParamMAXITERInput = CreateWindowW(L"edit", buff, WS_VISIBLE | WS_CHILD | WS_BORDER, 110, 470+25, 100, 25, hWnd, NULL, NULL, NULL);
+    //PARAMS INPUTS LABELS
+    CreateWindowW(L"static", L"StartX :", WS_VISIBLE | WS_CHILD, 10, 420, 100, 25, hWnd, NULL, NULL, NULL);
+    CreateWindowW(L"static", L"StartY :", WS_VISIBLE | WS_CHILD, 110, 420, 100, 25, hWnd, NULL, NULL, NULL);
+    CreateWindowW(L"static", L"Scale :", WS_VISIBLE | WS_CHILD, 10, 470, 100, 25, hWnd, NULL, NULL, NULL);
+    CreateWindowW(L"static", L"Max iter :", WS_VISIBLE | WS_CHILD, 110, 470, 100, 25, hWnd, NULL, NULL, NULL);
 }
 
 //
@@ -366,7 +397,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 break;
             case BT_NDRANGE:
                 
-                sendKernel();
+                sendKernel(1);
 
                 // extract timing data from the event, prof_event
                 clWaitForEvents(1, &prof_event);
